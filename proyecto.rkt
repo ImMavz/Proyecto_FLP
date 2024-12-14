@@ -1,6 +1,94 @@
 #lang eopl
 
 ; Definición de estructuras de datos
+;; Definición de datatypes para representar expresiones
+(define-datatype program program?
+  (a-program
+   (exp expression?)))
+
+(define-datatype expression expression?
+  (num-exp 
+   (num number?))
+  
+  (string-exp
+   (str string?))
+  
+  (bool-exp
+   (bool boolean?))
+  
+  (var-exp
+   (var identifier?))
+  
+  (var-definition-exp
+   (vars (list-of identifier?))
+   (inits (list-of expression?))
+   (body expression?))
+  
+  (let-definition-exp
+   (vars (list-of identifier?))
+   (inits (list-of expression?))
+   (body expression?))
+  
+  (primitive-exp
+   (prim primitive?)
+   (rands (list-of expression?)))
+  
+  (conditional-exp
+   (test boolean-expression?)
+   (then-exp expression?)
+   (else-exps (list-of expression?))
+   (final-else-exp expression?))
+  
+  (proc-exp
+   (vars (list-of identifier?))
+   (body expression?))
+  
+  (apply-exp
+   (rator identifier?)
+   (rands (list-of expression?)))
+  
+  (sequence-exp
+   (exps (list-of expression?)))
+  
+  (set-exp
+   (var identifier?)
+   (val expression?)))
+
+(define-datatype boolean-expression boolean-expression?
+  (bool-literal
+   (bool boolean?))
+  
+  (bool-primitive-exp
+   (prim bool-primitive?)
+   (rands (list-of expression?)))
+  
+  (bool-oper-exp
+   (oper bool-operator?)
+   (rands (list-of boolean-expression?))))
+
+;; Definición de tipos para primitivas
+(define-datatype primitive primitive?
+  (add-prim)
+  (sub-prim)
+  (mult-prim)
+  (mod-prim)
+  (concat-prim))
+
+(define-datatype bool-primitive bool-primitive?
+  (less-than)
+  (greater-than)
+  (less-equal)
+  (greater-equal)
+  (equal))
+
+(define-datatype bool-operator bool-operator?
+  (not-op)
+  (and-op)
+  (or-op))
+
+(define (identifier? x)
+  (symbol? x))
+
 
 ;; Especificación de la gramática
 (define the-grammar
@@ -78,7 +166,8 @@
     (bool-operator
      ("not") not-op
      ("and") and-op
-     ("or") or-op)))
+     ("or") or-op))    
+     )
 
 ;; Funciones para parsear según la gramática
 (define scan&parse
