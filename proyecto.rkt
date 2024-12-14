@@ -170,26 +170,165 @@
      )
 
 ;; Funciones para parsear según la gramática
-(define scan&parse
-  (sllgen:make-string-parser the-grammar))
+;;(define scan&parse
+  ;;(sllgen:make-string-parser the-grammar))
 
 ;; Función auxiliar para parsear texto
-(define (parse-obliq-program text)
-  (scan&parse text))
+;;(define (parse-obliq-program text)
+  ;;(scan&parse text))
 
-; Función principal de evaluación
+;; Definición del ambiente como una lista asociativa
+(define-datatype environment environment?
+  (empty-env)
+  (extend-env 
+   (vars (list-of identifier?))
+   (vals (list-of ))
+   (saved-env environment?)))
+
+;; Función para buscar una variable en el ambiente
+(define (apply-env env search-var)
+  (cases environment env
+    (empty-env () 
+      (eopl:error 'apply-env "Variable ~s no encontrada" search-var))
+    (extend-env (vars vals saved-env)
+      (let loop ((vars-list vars)
+                 (vals-list vals))
+        (cond 
+          ((null? vars-list) 
+           (apply-env saved-env search-var))
+          ((eq? search-var (car vars-list)) 
+           (car vals-list))
+          (else 
+           (loop (cdr vars-list) (cdr vals-list))))))))
+
+
+;; Funciones auxiliares para operadores lógicos
+(define (my-and . args)
+  (if (null? args) 
+      #t
+      (let loop ((remaining args))
+        (cond 
+          ((null? remaining) #t)
+          ((not (car remaining)) #f)
+          (else (loop (cdr remaining)))))))
+
+(define (my-or . args)
+  (if (null? args)
+      #f
+      (let loop ((remaining args))
+        (cond 
+          ((null? remaining) #f)
+          ((car remaining) #t)
+          (else (loop (cdr remaining)))))))
+
+(define (my-not x)
+  (not x))
+
+(define (init-env)
+  (extend-env 
+   '(+ - * % is < > <= >= and or not)
+   (list 
+    (lambda (x y) (+ x y))   ; +
+    (lambda (x y) (- x y))   ; -
+    (lambda (x y) (* x y))   ; *
+    (lambda (x y) (remainder x y))  ; %
+    (lambda (x y) (eq? x y)) ; is
+    (lambda (x y) (< x y))   ; <
+    (lambda (x y) (> x y))   ; >
+    (lambda (x y) (<= x y))  ; <=
+    (lambda (x y) (>= x y))  ; >=
+    my-and    ; and
+    my-or     ; or
+    my-not)   ; not
+   (empty-env)))
+;; Función de evaluación principal
 (define (eval-expression exp env)
-  (match exp
-    ; Casos para diferentes tipos de expresiones
-    [`(var ,vars ... in ,body end)
-     ; Lógica para variables
-     ]
-    [`(let ,vars ... in ,body end)
-     ; Lógica para definiciones inmutables
-     ]
-    ; Agregar más casos para otras construcciones
-    ))
+  (cases expression exp
+    (num-exp (num) num)
+    
+    (string-exp (str) str)
+    
+    (bool-exp (bool) bool)
+    
+    (var-exp (var) 
+     (apply-env env var))
+    
+    (primitive-exp (prim rands)
+     (let ([primitive-func (apply-env env 
+                             (cases primitive prim
+                               (add-prim () '+)
+                               (sub-prim () '-)
+                               (mult-prim () '*)
+                               (mod-prim () '%)
+                               (concat-prim () '&)))])
+       (apply primitive-func 
+              (map (lambda (rand) (eval-expression rand env)) 
+                   rands))))
+    
+    (let-definition-exp (vars inits body)
+     (let* ([evaluated-inits 
+             (map (lambda (init) (eval-expression init env)) inits)]
+            [new-env (extend-env vars evaluated-inits env)])
+       (eval-expression body new-env)))
+    
+    (conditional-exp (test then-exp else-exps final-else-exp)
+     (if (eval-boolean-expression test env)
+         (eval-expression then-exp env)
+         (if (null? else-exps)
+             (eval-expression final-else-exp env)
+             ; Implementación básica de múltiples elseif
+             (let loop ((remaining-else-exps else-exps))
+               (if (null? remaining-else-exps)
+                   (eval-expression final-else-exp env)
+                   (eopl:error 'eval-expression "Implementación de elseif pendiente"))))))
+    
+    ; Casos por implementar
+    (else 
+     (eopl:error 'eval-expression 
+                 "Tipo de expresión no soportado: ~s" 
+                 exp))))
+
+;; Función para evaluar expresiones booleanas
+(define (eval-boolean-expression bool-exp env)
+  (cases boolean-expression bool-exp
+    (bool-literal (bool) bool)
+    
+    (bool-primitive-exp (prim rands)
+     (let ([primitive-func (apply-env env 
+                             (cases bool-primitive prim
+                               (less-than () '<)
+                               (greater-than () '>)
+                               (less-equal () '<=)
+                               (greater-equal () '>=)
+                               (equal () 'is)))])
+       (apply primitive-func 
+              (map (lambda (rand) (eval-expression rand env)) 
+                   rands))))
+    
+    (bool-oper-exp (oper rands)
+     (let ([operator-func (cases bool-operator oper
+                            (not-op () my-not)
+                            (and-op () my-and)
+                            (or-op () my-or))])
+       (if (eq? operator-func not)
+           (not (eval-boolean-expression (car rands) env))
+           (apply operator-func 
+                  (map (lambda (rand) 
+                         (eval-boolean-expression rand env)) 
+                       rands)))))
+    
+    (else 
+     (eopl:error 'eval-boolean-expression 
+                 "Expresión booleana no soportada: ~s" 
+                 bool-exp))))
+
 #|
+;; Función principal de interpretación
+(define (interpret program)
+  (cases program program
+    (a-program (exp)
+      (eval-expression exp (init-env)))))
+
 ; Función para crear un nuevo entorno
 (define (extend-env env vars values)
   ; Lógica para extender el entorno
