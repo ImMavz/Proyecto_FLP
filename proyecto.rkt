@@ -272,22 +272,24 @@
        (eval-expression body new-env)))
     
     (conditional-exp (test then-exp else-exps final-else-exp)
-     (if (eval-boolean-expression test env)
-         (eval-expression then-exp env)
-         (if (null? else-exps)
-             (eval-expression final-else-exp env)
-             ; Implementación básica de múltiples elseif
-             (let loop ((remaining-else-exps else-exps))
-               (if (null? remaining-else-exps)
-                   (eval-expression final-else-exp env)
-                   (eopl:error 'eval-expression "Implementación de elseif pendiente"))))))
-    
+      (if (eval-boolean-expression test env)
+          (eval-expression then-exp env)
+          (let loop ((remaining-else-exps else-exps))
+            (if (null? remaining-else-exps)
+                (eval-expression final-else-exp env)
+                (let ((current-elseif (car remaining-else-exps)))
+                  (let ((elseif-test (car current-elseif))
+                        (elseif-body (cadr current-elseif)))
+                    (if (eval-boolean-expression elseif-test env)
+                        (eval-expression elseif-body env)
+                        (loop (cdr remaining-else-exps)))))))))
+  
     ; Casos por implementar
     (else 
      (eopl:error 'eval-expression 
                  "Tipo de expresión no soportado: ~s" 
                  exp))))
-
+  
 ;; Función para evaluar expresiones booleanas
 (define (eval-boolean-expression bool-exp env)
   (cases boolean-expression bool-exp
@@ -340,3 +342,5 @@
   )
 
 |#
+
+; Ejemplo de programa
