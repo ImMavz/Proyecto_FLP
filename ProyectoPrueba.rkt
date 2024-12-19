@@ -9,6 +9,7 @@
   Juan David Cuellar Lopez - 2266087
   |#
 
+(require rackunit)
 
   (define especificacion-lexica
     '(
@@ -21,7 +22,6 @@
       (numero ("-" digit (arbno digit)"." digit (arbno digit)) number)
       )
     )
-
 
   (define especificacion-gramatical
     '(
@@ -206,6 +206,23 @@
                   'ok)
                 (loop (cdr names) (cdr values))))))))
 
+(define object-clone
+  (lambda (source-obj field-names)
+    (let* ((source-field-names (vector-ref source-obj 0))
+           (source-field-values (vector-ref source-obj 1))
+           (new-field-values 
+            (map 
+             (lambda (field-name)
+               (let loop ((names source-field-names)
+                          (values source-field-values))
+                 (if (null? names)
+                     (eopl:error "Campo no encontrado en el objeto original: " field-name)
+                     (if (equal? (car names) field-name)
+                         (car values)
+                         (loop (cdr names) (cdr values))))))
+             field-names)))
+      (make-object field-names new-field-values))))
+
 ;; Evaluar expresión
 ;; Función auxiliar para evaluar expresiones booleanas
 (define evaluar-bool-expresion
@@ -368,22 +385,7 @@
       (clone-exp (source-exp field-names)
                  (let ((source-obj (evaluar-expresion source-exp env)))
                                      (object-clone source-obj field-names))))))
-                  
-                  ;; Definición de la función object-clone
-                  (define object-clone
-                    (lambda (source-obj field-names)
-                      (let ((source-field-names (vector-ref source-obj 0))
-                            (source-field-values (vector-ref source-obj 1)))
-                        (let loop ((names source-field-names)
-                                   (values source-field-values)
-                                   (new-names '())
-                                   (new-values '()))
-                          (if (null? names)
-                              (make-object (reverse new-names) (reverse new-values))
-                              (if (member (car names) field-names)
-                                  (loop (cdr names) (cdr values) new-names new-values)
-                                  (loop (cdr names) (cdr values) (cons (car names) new-names) (cons (car values) new-values))))))))
-    
+                      
 ;; Evaluador de primitivas
 (define evaluar-primitiva
   (lambda (prim args)
@@ -405,8 +407,6 @@
       (greater-equal-prim () (apply >= args)))))
 
 ;; Evaluador de operadores booleanos
-
-
 (define evaluar-elseifs
   (lambda (conditions expressions else-exp env)
     (cond
@@ -445,3 +445,5 @@
                         (sllgen:make-stream-parser
                          especificacion-lexica especificacion-gramatical)))
 (interpretador)
+
+(provide (all-defined-out))
