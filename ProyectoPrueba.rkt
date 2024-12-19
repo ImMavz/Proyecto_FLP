@@ -8,7 +8,6 @@
   
   Juan David Cuellar Lopez - 2266087
   |#
-
 (require rackunit)
 
   (define especificacion-lexica
@@ -50,7 +49,7 @@
       (expresion ("begin" expresion (arbno ";" expresion) "end") begin-exp)
     
       ;; Definición de una cláusula if-elseif
-      (expresion ("if" "(" bool-expresion ")" "then" expresion (arbno "elseif" bool-expresion "then" expresion) "else" expresion "end") if-exp)
+      (expresion ("if" bool-expresion "then" expresion (arbno "elseif" bool-expresion "then" expresion) "else" expresion "end") if-exp)
     
       (expresion ("proc" "(" (separated-list identificador ",") ")" expresion) proc-exp)
       (expresion ("apply" identificador "(" (separated-list expresion ",") ")") apply-exp)
@@ -272,12 +271,13 @@
       (prim-exp (prim args)
                 (let ((lista-numeros (map (lambda (x) (evaluar-expresion x env)) args)))
                   (evaluar-primitiva prim lista-numeros)))
-      
+
       ;; Condicionales
       (if-exp (condition then-exp elseif-conds elseif-exps else-exp)
-        (if (evaluar-expresion condition env)
-            (evaluar-expresion then-exp env)
-            (evaluar-elseifs elseif-conds elseif-exps else-exp env)))
+              (let ((cond-val (evaluar-bool-expresion condition env)))
+                (if cond-val
+                    (evaluar-expresion then-exp env)
+                    (evaluar-elseifs elseif-conds elseif-exps else-exp env))))
       
       ;; Definiciones
       (var-definition-exp (ids exps cuerpo)
@@ -330,7 +330,6 @@
       ;; Valores básicos
       (ok-exp () 'ok)
 
-      
       
       ;; Objetos y métodos
       (meth-exp (self-id params body)
@@ -444,6 +443,6 @@
   (sllgen:make-rep-loop "-->" evaluar-programa
                         (sllgen:make-stream-parser
                          especificacion-lexica especificacion-gramatical)))
-(interpretador)
+;;(interpretador)
 
 (provide (all-defined-out))
