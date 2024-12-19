@@ -1,4 +1,14 @@
 #lang racket
+
+#|Samuel Escobar Rivera - 2266363
+
+César David Peñaranda Melo - 2266265
+
+Joseph Herrera Libreros - 2266309
+
+Juan David Cuellar Lopez - 2266087
+|#
+
 (require rackunit "ProyectoPrueba.rkt")
 
 (define let-exp1
