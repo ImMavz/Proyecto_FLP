@@ -1,4 +1,3 @@
-# Proyecto_FLP
 # Proyecto Final - Fundamentos de Programación
 
 El presente documento describe el proyecto final del curso de **Fundamentos de Programación**, orientado a aplicar los conceptos teóricos y prácticos aprendidos a lo largo del curso. El objetivo principal de este proyecto es desafiar a los estudiantes mediante la implementación de un interpretador para el lenguaje de programación **Obliq**.
